@@ -36,7 +36,7 @@ const declarations = [
 const prayerTopics = ["담임목사님을 위해", "특새를 위해", "청장년을 위해", "가정을 위해", "교회를 위해"];
 
 // Constants
-const MAX_DECLARATION_COUNT = 3;
+const MAX_DECLARATION_COUNT = 5; // 선포 횟수 5번으로 변경
 const challengeYear = 2025;
 const challengeMonth = 9; // 0-indexed, 9 is October
 const USERNAME_STORAGE_KEY_PREFIX = 'doodeurimChallenge';
@@ -44,29 +44,45 @@ const USERNAME_STORAGE_KEY_PREFIX = 'doodeurimChallenge';
 const getInitialDateStatus = () => {
     const status = {};
     for (let i = 1; i <= declarations.length; i++) {
-        status[i.toString()] = { count: 0, completed: false };
+        // 기도 완료 상태 추가
+        status[i.toString()] = { count: 0, completed: false, prayerCompleted: false };
     }
     return status;
 };
 
 // Components
-function CalendarModal({ date, declaration, prayerTopic, onClose, onDeclare, currentCount, isCompleted }) {
+function CalendarModal({ date, declaration, prayerTopic, onClose, onDeclare, onPray, currentCount, isCompleted, isPrayerCompleted }) {
     const handleDeclareClick = () => {
         if (!isCompleted) {
             onDeclare();
         }
     };
+
+    const handlePrayClick = () => {
+        if (!isPrayerCompleted) {
+            onPray();
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md text-center border-2 border-teal-400">
                 <h3 className="text-lg font-bold text-teal-300 mb-2">{`${challengeYear}년 ${challengeMonth + 1}월 ${date}일`}</h3>
                 <p className="text-xl font-semibold text-white mb-4">🙏 {prayerTopic}</p>
                 <p className="text-2xl text-yellow-300 mb-6 leading-relaxed font-serif">"{declaration}"</p>
-                <div className="flex flex-col items-center">
+                <div className="flex flex-col items-center space-y-3">
+                    {/* 기도 완료 버튼 추가 */}
+                    <button
+                        onClick={handlePrayClick}
+                        disabled={isPrayerCompleted}
+                        className={`w-full px-6 py-3 text-white font-bold rounded-lg transition-transform transform hover:scale-105 ${isPrayerCompleted ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700'}`}
+                    >
+                        {isPrayerCompleted ? '기도 완료!' : '오늘의 기도 완료'}
+                    </button>
                     <button
                         onClick={handleDeclareClick}
                         disabled={isCompleted}
-                        className={`w-full px-6 py-3 mb-4 text-white font-bold rounded-lg transition-transform transform hover:scale-105 ${isCompleted ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700'}`}
+                        className={`w-full px-6 py-3 text-white font-bold rounded-lg transition-transform transform hover:scale-105 ${isCompleted ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700'}`}
                     >
                         {isCompleted ? `선포 완료!` : `기선제압! (${currentCount}/${MAX_DECLARATION_COUNT})`}
                     </button>
@@ -102,7 +118,7 @@ function FinalCompletionModal({ userName, cellName, onClose }) {
 function App() {
     const [cellNameInput, setCellNameInput] = useState('');
     const [userNameInput, setUserNameInput] = useState('');
-    const [userInfo, setUserInfo] = useState(null); // { name: '...', cell: '...' }
+    const [userInfo, setUserInfo] = useState(null);
     const [userId, setUserId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [dateStatuses, setDateStatuses] = useState(getInitialDateStatus());
@@ -113,13 +129,11 @@ function App() {
     const USERNAME_STORAGE_KEY = `${USERNAME_STORAGE_KEY_PREFIX}-userName`;
     const CELLNAME_STORAGE_KEY = `${USERNAME_STORAGE_KEY_PREFIX}-cellName`;
 
-    // 1. Authentication Effect: Runs once to establish user identity.
     useEffect(() => {
         if (!auth) {
             setIsLoading(false);
             return;
         }
-
         const hostToken = (typeof window !== 'undefined' && window.__initial_auth_token) ? window.__initial_auth_token : null;
         
         const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
@@ -152,7 +166,6 @@ function App() {
         return () => unsubscribeAuth();
     }, [USERNAME_STORAGE_KEY, CELLNAME_STORAGE_KEY]);
 
-    // 2. Data Fetching Effect: Runs only when we have a confirmed user with their info set.
     useEffect(() => {
         if (userId && userInfo) {
             const challengeDocRef = doc(db, 'artifacts', appId, 'users', userId, 'challenge_status', `october${challengeYear}`);
@@ -189,15 +202,13 @@ function App() {
     };
 
     const isDateClickable = useCallback((day) => {
-        // *** BUG FIX: THIS IS THE MOST IMPORTANT CHANGE ***
-        // Always check for userId first, before any other condition.
-        if (!userId) return false; 
-        
+        if (!userId) return false;
         if (day === 1) return true;
         
         const prevDayKey = (day - 1).toString();
         const prevDayStatus = dateStatuses[prevDayKey];
-        return prevDayStatus && prevDayStatus.completed;
+        // 기도와 선포를 모두 완료해야 다음 날짜가 활성화
+        return prevDayStatus && prevDayStatus.completed && prevDayStatus.prayerCompleted;
     }, [dateStatuses, userId]);
 
     const handleDateClick = (day) => {
@@ -209,7 +220,7 @@ function App() {
             setSelectedDate(day);
             setIsModalOpen(true);
         } else if (day > 0 && day <= declarations.length) {
-            alert("이전 날짜의 선포를 먼저 완료해주세요!");
+            alert("이전 날짜의 기도와 선포를 먼저 완료해주세요!");
         }
     };
 
@@ -232,18 +243,37 @@ function App() {
     const handleDeclare = async () => {
         if (!selectedDate || !userId) return;
         const dayKey = selectedDate.toString();
-        const currentStatus = dateStatuses[dayKey] || getInitialDateStatus()[dayKey];
+        const currentStatus = dateStatuses[dayKey];
         if (currentStatus.completed) return;
+
         const newCount = currentStatus.count + 1;
         const newCompleted = newCount >= MAX_DECLARATION_COUNT;
         const newStatus = { ...currentStatus, count: newCount, completed: newCompleted };
-        setDateStatuses(prevStatuses => ({ ...prevStatuses, [dayKey]: newStatus }));
+        setDateStatuses(prev => ({ ...prev, [dayKey]: newStatus }));
         await saveDateStatusToFirestore(selectedDate, newStatus);
 
-        if (selectedDate === declarations.length && newCompleted) {
+        if (selectedDate === declarations.length && newCompleted && newStatus.prayerCompleted) {
             setTimeout(() => setIsChallengeComplete(true), 500);
         }
-        if (newCompleted) {
+        if (newCompleted && currentStatus.prayerCompleted) {
+            setTimeout(handleCloseModal, 300);
+        }
+    };
+
+    const handlePray = async () => {
+        if (!selectedDate || !userId) return;
+        const dayKey = selectedDate.toString();
+        const currentStatus = dateStatuses[dayKey];
+        if (currentStatus.prayerCompleted) return;
+
+        const newStatus = { ...currentStatus, prayerCompleted: true };
+        setDateStatuses(prev => ({ ...prev, [dayKey]: newStatus }));
+        await saveDateStatusToFirestore(selectedDate, newStatus);
+
+        if (selectedDate === declarations.length && newStatus.completed) {
+            setTimeout(() => setIsChallengeComplete(true), 500);
+        }
+        if (currentStatus.completed && newStatus.prayerCompleted) {
             setTimeout(handleCloseModal, 300);
         }
     };
@@ -259,21 +289,24 @@ function App() {
 
     for (let day = 1; day <= daysInOctober2025; day++) {
         const dayKey = day.toString();
-        const status = dateStatuses[dayKey] || { count: 0, completed: false };
-        const isDayCompleted = status.completed;
+        const status = dateStatuses[dayKey] || { count: 0, completed: false, prayerCompleted: false };
+        const isDayFullyCompleted = status.completed && status.prayerCompleted;
         const clickable = isDateClickable(day);
 
         calendarDays.push(
             <div
                 key={day}
                 className={`p-2 rounded-lg flex flex-col items-center justify-between h-24 sm:h-28 
-                    ${isDayCompleted ? 'bg-teal-500/80' : 'bg-gray-800/80'} 
+                    ${isDayFullyCompleted ? 'bg-teal-500/80' : 'bg-gray-800/80'} 
                     ${clickable ? 'cursor-pointer hover:bg-gray-700' : 'cursor-not-allowed opacity-60'}`}
                 onClick={() => handleDateClick(day)}
             >
                 <span className="text-sm sm:text-base font-bold text-white">{day}</span>
-                <span className="text-xs text-yellow-300 font-semibold">기선제압</span>
-                <div className={`w-3 h-3 rounded-full ${isDayCompleted ? 'bg-yellow-400' : 'bg-gray-600'}`}></div>
+                <span className="text-xs text-yellow-300 font-semibold">기선제압!</span>
+                <div className="flex items-center justify-center space-x-1.5">
+                    <div className={`w-3 h-3 rounded-full ${status.prayerCompleted ? 'bg-sky-400' : 'bg-gray-600'}`} title="기도 완료"></div>
+                    <div className={`w-3 h-3 rounded-full ${status.completed ? 'bg-yellow-400' : 'bg-gray-600'}`} title="선포 완료"></div>
+                </div>
             </div>
         );
     }
@@ -337,8 +370,10 @@ function App() {
                     prayerTopic={prayerTopics[(selectedDate - 1) % prayerTopics.length]}
                     currentCount={dateStatuses[selectedDate.toString()]?.count || 0}
                     isCompleted={dateStatuses[selectedDate.toString()]?.completed || false}
+                    isPrayerCompleted={dateStatuses[selectedDate.toString()]?.prayerCompleted || false}
                     onClose={handleCloseModal}
                     onDeclare={handleDeclare}
+                    onPray={handlePray}
                 />
             )}
             {isChallengeComplete && (
