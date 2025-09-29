@@ -90,7 +90,7 @@ function CalendarModal({ date, declaration, prayerTopic, onClose, onDeclare, onP
                         onClick={onClose}
                         className="px-4 py-2 bg-gray-700 text-gray-300 text-sm font-semibold rounded-md hover:bg-gray-600"
                     >
-                        {isAllComplete ? '기선제압 완료!' : '닫기'}
+                        {isAllComplete ? '기선제압 완료' : '닫기'}
                     </button>
                 </div>
             </div>
@@ -191,14 +191,19 @@ function App() {
 
     const handleStartChallenge = () => {
         const trimmedUserName = userNameInput.trim();
-        const trimmedCellName = cellNameInput.trim();
-        if (!trimmedUserName || !trimmedCellName) {
+        let formattedCellName = cellNameInput.trim();
+        if (!trimmedUserName || !formattedCellName) {
             alert("셀과 이름을 모두 입력해주세요.");
             return;
         }
+        
+        if (!formattedCellName.endsWith('셀')) {
+            formattedCellName += '셀';
+        }
+
         localStorage.setItem(USERNAME_STORAGE_KEY, trimmedUserName);
-        localStorage.setItem(CELLNAME_STORAGE_KEY, trimmedCellName);
-        setUserInfo({ name: trimmedUserName, cell: trimmedCellName });
+        localStorage.setItem(CELLNAME_STORAGE_KEY, formattedCellName);
+        setUserInfo({ name: trimmedUserName, cell: formattedCellName });
     };
 
     const isDateClickable = useCallback((day) => {
@@ -298,7 +303,7 @@ function App() {
                 onClick={() => handleDateClick(day)}
             >
                 <span className="text-sm sm:text-base font-bold text-white">{day}</span>
-                <span className="text-xs text-yellow-300 font-semibold">기선제압!</span>
+                <span className="text-[11px] text-yellow-300 font-semibold">기선제압</span>
                 <div className="flex items-center justify-center space-x-1.5">
                     <div className={`w-3 h-3 rounded-full ${status.prayerCompleted ? 'bg-sky-400' : 'bg-gray-600'}`} title="기도 완료"></div>
                     <div className={`w-3 h-3 rounded-full ${status.completed ? 'bg-yellow-400' : 'bg-gray-600'}`} title="선포 완료"></div>
