@@ -43,6 +43,7 @@ const specialPrayerTopics = {
   // 예시) 25: "나라와 민족을 위해 기도합니다"
 };
 
+
 // Constants
 const MAX_DECLARATION_COUNT = 5;
 const challengeYear = 2025;
@@ -216,7 +217,29 @@ function App() {
 
     const isDateClickable = useCallback((day) => {
         if (!userId) return false;
-        if (day === 1) return true;
+
+        // --- 테스트를 위해 날짜 제한을 임시로 비활성화합니다. ---
+        // --- 테스트 후 이 주석(/* */)을 풀면 원래대로 돌아갑니다. ---
+        /*
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth(); // 0-indexed
+        const currentDate = today.getDate();
+
+        if (currentYear < challengeYear || (currentYear === challengeYear && currentMonth < challengeMonth)) {
+            return false;
+        }
+
+        if (currentYear === challengeYear && currentMonth === challengeMonth) {
+            if (day > currentDate) {
+                return false;
+            }
+        }
+        */
+
+        if (day === 1) {
+            return true;
+        }
         
         const prevDayKey = (day - 1).toString();
         const prevDayStatus = dateStatuses[prevDayKey];
@@ -232,7 +255,12 @@ function App() {
             setSelectedDate(day);
             setIsModalOpen(true);
         } else if (day > 0 && day <= declarations.length) {
-            alert("이전 날짜의 기도와 선포를 먼저 완료해주세요!");
+            const today = new Date();
+            if (today.getFullYear() === challengeYear && today.getMonth() === challengeMonth && day > today.getDate()) {
+                alert(`${day}일 챌린지는 아직 시작되지 않았습니다!`);
+            } else {
+                alert("이전 날짜의 기도와 선포를 먼저 완료해주세요!");
+            }
         }
     };
 
@@ -376,7 +404,7 @@ function App() {
                 <CalendarModal
                     date={selectedDate}
                     declaration={declarations[selectedDate - 1]}
-                    prayerTopic={prayerTopics[(selectedDate - 1) % prayerTopics.length]}
+                    prayerTopic={specialPrayerTopics[selectedDate] || prayerTopics[(selectedDate - 1) % prayerTopics.length]}
                     currentCount={dateStatuses[selectedDate.toString()]?.count || 0}
                     isCompleted={dateStatuses[selectedDate.toString()]?.completed || false}
                     isPrayerCompleted={dateStatuses[selectedDate.toString()]?.prayerCompleted || false}
