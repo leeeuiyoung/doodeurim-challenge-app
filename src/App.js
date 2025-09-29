@@ -29,7 +29,6 @@ if (firebaseConfig && firebaseConfig.apiKey) {
   console.error("Firebase configuration is missing or incomplete. The app will not connect to the database.");
 }
 
-// ... (The rest of the App.js code remains the same) ...
 // Declarations and Prayer Topics
 const declarations = [
     "나는 하나님의 사랑받는 자녀입니다", "나는 하나님의 형상입니다", "나는 하늘나라 상속자입니다", "나는 하늘나라 시민권자입니다", "나는 하나님께 시선을 두는 자녀입니다", "나는 그리스도의 심판대에서 생각합니다", "나는 하나님 보시기에 심히 좋은 존재입니다", "나는 예수님만큼 가치 있는 존재입니다", "나는 주안에서 기뻐하는 자입니다", "나는 새사람의 정체성으로 살아갑니다", "나는 감사로 문을 열어갑니다", "나는 이기며 승리하는 권세가 있습니다", "나는 말과 혀로 가정을 살리는 자입니다", "나는 그리스도와 연합된 존재입니다", "나는 삶을 인도하시는 하나님을 신뢰합니다", "나는 영혼이 잘됨 같이 범사도 잘됩니다", "나는 믿음을 선포하는 자입니다", "나는 감사로 상황을 돌파합니다", "나는 어떤 상황에서도 하나님을 찬양합니다", "나는 누구보다 존귀한 자녀입니다", "나는 예수님과 함께 걸어갑니다", "나는 어둠을 몰아내는 빛입니다", "나는 기도하며 낙심하지 않는 자입니다", "나는 빛 가운데 걸어가는 자녀입니다", "나는 기도 응답을 풍성히 누립니다", "나는 소망 가운데 인내합니다", "나는 내 생각보다 크신 하나님의 계획을 신뢰합니다", "나는 하나님의 말씀에 삶의 기준을 두는 자녀입니다", "나는 하나님의 평강을 누리는 자녀입니다", "나는 예수님처럼 용서하는 자녀입니다", "나는 가정의 영적 제사장입니다."
@@ -190,8 +189,12 @@ function App() {
     };
 
     const isDateClickable = useCallback((day) => {
-        if (!userId) return false;
+        // *** BUG FIX: THIS IS THE MOST IMPORTANT CHANGE ***
+        // Always check for userId first, before any other condition.
+        if (!userId) return false; 
+        
         if (day === 1) return true;
+        
         const prevDayKey = (day - 1).toString();
         const prevDayStatus = dateStatuses[prevDayKey];
         return prevDayStatus && prevDayStatus.completed;
