@@ -255,6 +255,7 @@ function App() {
         if (selectedDate === declarations.length && newCompleted && newStatus.prayerCompleted) {
             setTimeout(() => setIsChallengeComplete(true), 500);
         }
+        // 선포가 완료되었고, 기도가 이미 완료된 상태일 때만 팝업을 닫습니다.
         if (newCompleted && currentStatus.prayerCompleted) {
             setTimeout(handleCloseModal, 300);
         }
@@ -273,9 +274,7 @@ function App() {
         if (selectedDate === declarations.length && newStatus.completed) {
             setTimeout(() => setIsChallengeComplete(true), 500);
         }
-        if (currentStatus.completed && newStatus.prayerCompleted) {
-            setTimeout(handleCloseModal, 300);
-        }
+        // 기도 완료 시에는 팝업을 닫는 로직을 제거합니다.
     };
     
     // Render logic
