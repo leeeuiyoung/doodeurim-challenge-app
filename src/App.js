@@ -36,7 +36,7 @@ const declarations = [
 const prayerTopics = ["담임목사님을 위해", "특새를 위해", "청장년을 위해", "가정을 위해", "교회를 위해"];
 
 // Constants
-const MAX_DECLARATION_COUNT = 5; // 선포 횟수 5번으로 변경
+const MAX_DECLARATION_COUNT = 5;
 const challengeYear = 2025;
 const challengeMonth = 9; // 0-indexed, 9 is October
 const USERNAME_STORAGE_KEY_PREFIX = 'doodeurimChallenge';
@@ -44,7 +44,6 @@ const USERNAME_STORAGE_KEY_PREFIX = 'doodeurimChallenge';
 const getInitialDateStatus = () => {
     const status = {};
     for (let i = 1; i <= declarations.length; i++) {
-        // 기도 완료 상태 추가
         status[i.toString()] = { count: 0, completed: false, prayerCompleted: false };
     }
     return status;
@@ -64,6 +63,8 @@ function CalendarModal({ date, declaration, prayerTopic, onClose, onDeclare, onP
         }
     };
 
+    const isAllComplete = isPrayerCompleted && isCompleted;
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-md text-center border-2 border-teal-400">
@@ -71,26 +72,25 @@ function CalendarModal({ date, declaration, prayerTopic, onClose, onDeclare, onP
                 <p className="text-xl font-semibold text-white mb-4">🙏 {prayerTopic}</p>
                 <p className="text-2xl text-yellow-300 mb-6 leading-relaxed font-serif">"{declaration}"</p>
                 <div className="flex flex-col items-center space-y-3">
-                    {/* 기도 완료 버튼 추가 */}
                     <button
                         onClick={handlePrayClick}
                         disabled={isPrayerCompleted}
                         className={`w-full px-6 py-3 text-white font-bold rounded-lg transition-transform transform hover:scale-105 ${isPrayerCompleted ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-600 hover:to-indigo-700'}`}
                     >
-                        {isPrayerCompleted ? '기도 완료!' : '오늘의 기도 완료'}
+                        {isPrayerCompleted ? '기도 완료!' : '오늘의 기도'}
                     </button>
                     <button
                         onClick={handleDeclareClick}
                         disabled={isCompleted}
                         className={`w-full px-6 py-3 text-white font-bold rounded-lg transition-transform transform hover:scale-105 ${isCompleted ? 'bg-gray-600 cursor-not-allowed' : 'bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-600 hover:to-blue-700'}`}
                     >
-                        {isCompleted ? `선포 완료!` : `기선제압! (${currentCount}/${MAX_DECLARATION_COUNT})`}
+                        {isCompleted ? `선포 완료!` : `오늘의 선포 (${currentCount}/${MAX_DECLARATION_COUNT})`}
                     </button>
                     <button
                         onClick={onClose}
                         className="px-4 py-2 bg-gray-700 text-gray-300 text-sm font-semibold rounded-md hover:bg-gray-600"
                     >
-                        닫기
+                        {isAllComplete ? '기선제압 완료!' : '닫기'}
                     </button>
                 </div>
             </div>
@@ -207,7 +207,6 @@ function App() {
         
         const prevDayKey = (day - 1).toString();
         const prevDayStatus = dateStatuses[prevDayKey];
-        // 기도와 선포를 모두 완료해야 다음 날짜가 활성화
         return prevDayStatus && prevDayStatus.completed && prevDayStatus.prayerCompleted;
     }, [dateStatuses, userId]);
 
@@ -255,7 +254,6 @@ function App() {
         if (selectedDate === declarations.length && newCompleted && newStatus.prayerCompleted) {
             setTimeout(() => setIsChallengeComplete(true), 500);
         }
-        // 선포가 완료되었고, 기도가 이미 완료된 상태일 때만 팝업을 닫습니다.
         if (newCompleted && currentStatus.prayerCompleted) {
             setTimeout(handleCloseModal, 300);
         }
@@ -274,7 +272,6 @@ function App() {
         if (selectedDate === declarations.length && newStatus.completed) {
             setTimeout(() => setIsChallengeComplete(true), 500);
         }
-        // 기도 완료 시에는 팝업을 닫는 로직을 제거합니다.
     };
     
     // Render logic
