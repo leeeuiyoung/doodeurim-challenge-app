@@ -3,27 +3,33 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-// Firebase configuration - A MUCH SAFER APPROACH
-// This now STRICTLY relies on the configuration provided by the Canvas environment.
+// A robust configuration that works in Canvas and on Netlify
 const firebaseConfig = (typeof window !== 'undefined' && window.__firebase_config)
-  ? JSON.parse(window.__firebase_config)
-  : null;
+  ? JSON.parse(window.__firebase_config) // Priority 1: Canvas environment
+  : { // Priority 2: Netlify environment variables
+      apiKey: process.env.REACT_APP_API_KEY,
+      authDomain: process.env.REACT_APP_AUTH_DOMAIN,
+      projectId: process.env.REACT_APP_PROJECT_ID,
+      storageBucket: process.env.REACT_APP_STORAGE_BUCKET,
+      messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+      appId: process.env.REACT_APP_APP_ID
+    };
 
 const appId = (typeof window !== 'undefined' && window.__app_id) 
   ? window.__app_id 
-  : 'doodeurim-challenge-app'; // A generic fallback for local testing
+  : 'doodeurim-challenge-app';
 
 // Initialize Firebase only if the config is valid
 let app, auth, db;
-if (firebaseConfig) {
+if (firebaseConfig && firebaseConfig.apiKey) {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
 } else {
-  console.error("Firebase configuration not found. The app will not connect to the database.");
+  console.error("Firebase configuration is missing or incomplete. The app will not connect to the database.");
 }
 
-
+// ... (The rest of the App.js code remains the same) ...
 // Declarations and Prayer Topics
 const declarations = [
     "나는 하나님의 사랑받는 자녀입니다", "나는 하나님의 형상입니다", "나는 하늘나라 상속자입니다", "나는 하늘나라 시민권자입니다", "나는 하나님께 시선을 두는 자녀입니다", "나는 그리스도의 심판대에서 생각합니다", "나는 하나님 보시기에 심히 좋은 존재입니다", "나는 예수님만큼 가치 있는 존재입니다", "나는 주안에서 기뻐하는 자입니다", "나는 새사람의 정체성으로 살아갑니다", "나는 감사로 문을 열어갑니다", "나는 이기며 승리하는 권세가 있습니다", "나는 말과 혀로 가정을 살리는 자입니다", "나는 그리스도와 연합된 존재입니다", "나는 삶을 인도하시는 하나님을 신뢰합니다", "나는 영혼이 잘됨 같이 범사도 잘됩니다", "나는 믿음을 선포하는 자입니다", "나는 감사로 상황을 돌파합니다", "나는 어떤 상황에서도 하나님을 찬양합니다", "나는 누구보다 존귀한 자녀입니다", "나는 예수님과 함께 걸어갑니다", "나는 어둠을 몰아내는 빛입니다", "나는 기도하며 낙심하지 않는 자입니다", "나는 빛 가운데 걸어가는 자녀입니다", "나는 기도 응답을 풍성히 누립니다", "나는 소망 가운데 인내합니다", "나는 내 생각보다 크신 하나님의 계획을 신뢰합니다", "나는 하나님의 말씀에 삶의 기준을 두는 자녀입니다", "나는 하나님의 평강을 누리는 자녀입니다", "나는 예수님처럼 용서하는 자녀입니다", "나는 가정의 영적 제사장입니다."
@@ -147,9 +153,9 @@ function App() {
         return () => unsubscribeAuth();
     }, [USERNAME_STORAGE_KEY, CELLNAME_STORAGE_KEY]);
 
-    // 2. Data Fetching Effect: Runs only when we have a confirmed user ID.
+    // 2. Data Fetching Effect: Runs only when we have a confirmed user with their info set.
     useEffect(() => {
-        if (userId) {
+        if (userId && userInfo) {
             const challengeDocRef = doc(db, 'artifacts', appId, 'users', userId, 'challenge_status', `october${challengeYear}`);
 
             const unsubscribeFirestore = onSnapshot(challengeDocRef, (docSnap) => {
@@ -169,7 +175,7 @@ function App() {
             });
             return () => unsubscribeFirestore();
         }
-    }, [userId]);
+    }, [userId, userInfo]);
 
     const handleStartChallenge = () => {
         const trimmedUserName = userNameInput.trim();
@@ -270,11 +276,14 @@ function App() {
     }
 
     const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
-
-    if (!firebaseConfig) {
+    
+    if (!firebaseConfig || !firebaseConfig.apiKey) {
         return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white text-lg" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #3b0764 100%)' }}>
-                Firebase 설정에 문제가 있습니다. 앱을 실행할 수 없습니다.
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 text-white text-center" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #3b0764 100%)' }}>
+                <div>
+                    <h1 className="text-2xl font-bold mb-4">Firebase 설정에 문제가 있습니다.</h1>
+                    <p>Netlify 환경 변수가 올바르게 설정되었는지 확인해주세요.</p>
+                </div>
             </div>
         );
     }
