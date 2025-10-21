@@ -36,7 +36,7 @@ const declarations = [
 const prayerTopics = ["담임목사님의 사역과 건강을 위해", "부목사님과 청장년 리더들을 위해", "감사의 고백이 풍성한 가정이 되도록", "가을특새를 통해 큰 은혜 받기 위해", "자녀들의 성령충만을 위해"];
 
 const specialPrayerTopics = {
-  21: "캄보디아 단기선교를 위해"
+  21: "특새를 위한 기도루틴이 견고하게 세워지도록"
 };
 
 // Constants
